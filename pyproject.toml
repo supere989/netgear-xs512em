@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netgear-xs512em"
+version = "0.1.0"
+description = "Pure-Python control of the NETGEAR XS512EM Smart Managed Plus switch (no SSH/SNMP) — library, CLI, and MCP server."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "supere989" }]
+keywords = ["netgear", "xs512em", "switch", "vlan", "network", "mcp", "smart-managed"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = ["requests>=2.25"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0"]
+
+[project.urls]
+Homepage = "https://github.com/supere989/netgear-xs512em"
+Repository = "https://github.com/supere989/netgear-xs512em"
+Issues = "https://github.com/supere989/netgear-xs512em/issues"
+
+[project.scripts]
+xs512em = "netgear_xs512em.cli:main"
+xs512em-mcp = "netgear_xs512em.mcp_server:main"
+
+[tool.setuptools.packages.find]
+include = ["netgear_xs512em*"]
