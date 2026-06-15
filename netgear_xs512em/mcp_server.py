@@ -13,6 +13,8 @@ Configure via environment:
   * ``MCP_TRANSPORT`` — ``stdio`` | ``streamable-http`` | ``http`` (alias) | ``sse``  (default ``stdio``)
   * ``MCP_HOST`` / ``MCP_PORT`` — bind address for the HTTP transports (default ``0.0.0.0:8765``)
   * ``XS512EM_MCP_TOKEN`` — if set, HTTP clients must send ``Authorization: Bearer <token>``
+  * ``MCP_ALLOWED_HOSTS`` — comma list to enable DNS-rebinding host-validation (default: off
+    for a shared endpoint — the bearer token + network boundary are the access controls)
 
 Local (stdio) registration::
 
@@ -68,7 +70,7 @@ def _switch():
         _SWITCH_LOCK.release()
 
 
-def build_server():
+def build_server(transport_security=None):
     """Construct and return the FastMCP server (imported lazily so the core stays dependency-light)."""
     try:
         from mcp.server.fastmcp import FastMCP
@@ -77,7 +79,7 @@ def build_server():
             "the MCP server needs the 'mcp' package — install with: pip install 'netgear-xs512em[mcp]'"
         ) from e
 
-    mcp = FastMCP("xs512em")
+    mcp = FastMCP("xs512em", transport_security=transport_security)
 
     @mcp.tool()
     def xs512_read_vlans() -> dict:
@@ -165,11 +167,29 @@ class _HealthAndAuth:
         await send({"type": "http.response.body", "body": body})
 
 
+def _transport_security():
+    """DNS-rebinding protection for the HTTP transports. A *shared* remote endpoint is
+    reached by IP/hostname (not localhost), so the SDK's default host-validation rejects
+    it (HTTP 421 Misdirected Request). Set ``MCP_ALLOWED_HOSTS`` (comma list, e.g.
+    ``10.150.1.201:8765,switch-mcp.lan:8765``) to enforce an allowlist; otherwise we
+    disable host-validation and rely on the bearer token + network boundary."""
+    from mcp.server.transport_security import TransportSecuritySettings
+    hosts = [h.strip() for h in os.environ.get("MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    origins = [o.strip() for o in os.environ.get("MCP_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+    if hosts:
+        return TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=hosts,
+            allowed_origins=origins or ["*"],
+        )
+    return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+
 def serve_http(transport: str, host: str, port: int, token: str | None = None) -> None:
     """Serve the MCP server over an HTTP transport via uvicorn."""
     import uvicorn
 
-    server = build_server()
+    server = build_server(_transport_security())
     server.settings.host = host
     server.settings.port = port
     app = server.sse_app() if transport == "sse" else server.streamable_http_app()
