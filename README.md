@@ -91,6 +91,28 @@ XS512EM_HOST=192.168.0.239 XS512EM_PASSWORD='...' \
 
 Then ask your agent to read or change the switch with the `xs512_*` tools.
 
+### Remote MCP server (HTTP/SSE) — one shared endpoint
+
+Run the server **once** (e.g. on a tool-hub host) and point every agent at it, instead of each
+machine spawning its own stdio copy. Transports: **streamable-http** (current MCP spec, `/mcp`)
+or legacy **sse** (`/sse`). Set `XS512EM_MCP_TOKEN` to require `Authorization: Bearer <token>`;
+`GET /healthz` is an unauthenticated liveness probe.
+
+```bash
+# on the hub:
+XS512EM_HOST=10.150.1.239 XS512EM_PASSWORD_FILE=/etc/xs512em/pw \
+XS512EM_MCP_TOKEN="$(cat /etc/xs512em/token)" \
+    xs512em-mcp --transport http --host 0.0.0.0 --port 8765   # or via MCP_TRANSPORT/MCP_HOST/MCP_PORT
+
+# on each client:
+claude mcp add --transport http xs512em http://<hub>:8765/mcp \
+    --header "Authorization: Bearer <token>"
+```
+
+Container / systemd deploys are in `docker-compose.yml` and `deploy/xs512em-mcp.service`. The server
+**serialises all calls behind a process-wide mutex**, so a shared endpoint is safe across concurrent
+clients despite the switch's single-session limit.
+
 ## How it works
 
 Under the GUI, the switch is an authenticated HTTP form API: login is
@@ -103,8 +125,9 @@ The full decomposition — login flow, endpoints, field formats — is documente
 
 ## Safety notes
 
-- **Single session.** The switch allows only one management session at a time. The client
-  always logs out (it's a context manager); don't run two operations concurrently.
+- **Single session.** The switch allows only one management session at a time. The client always
+  logs out (context manager), and the MCP server **serialises all calls behind a process-wide mutex**,
+  so a shared remote endpoint is safe under concurrency.
 - **`enable-8021q` erases VLAN settings.** Enabling Advanced 802.1Q resets every port to
   untagged VLAN 1 — by design of the switch firmware. Read the current config first.
 - **Moving a port between VLANs** can cut traffic on that port mid-change; set membership and

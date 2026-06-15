@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "netgear-xs512em"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pure-Python control of the NETGEAR XS512EM Smart Managed Plus switch (no SSH/SNMP) — library, CLI, and MCP server."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -22,7 +22,7 @@ classifiers = [
 dependencies = ["requests>=2.25"]
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.0"]
+mcp = ["mcp>=1.6"]
 
 [project.urls]
 Homepage = "https://github.com/supere989/netgear-xs512em"

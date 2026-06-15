@@ -1,0 +1,43 @@
+# systemd unit for the xs512em MCP server (streamable-http) — non-Docker deploy.
+#
+# Setup:
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin xs512em
+#   sudo install -d -o root -g xs512em -m 750 /etc/xs512em
+#   sudo install -d -o root -g root /opt/xs512em && cd /opt/xs512em
+#   sudo git clone https://github.com/supere989/netgear-xs512em .
+#   sudo python3 -m venv .venv && sudo .venv/bin/pip install '.[mcp]'
+#   # switch password (readable by the service user only):
+#   sudo install -o root -g xs512em -m 640 /path/to/pw /etc/xs512em/pw
+#   # environment file:  /etc/xs512em/mcp.env  (mode 640, group xs512em) with:
+#   #   MCP_TRANSPORT=streamable-http
+#   #   MCP_HOST=0.0.0.0
+#   #   MCP_PORT=8765
+#   #   XS512EM_HOST=10.150.1.239
+#   #   XS512EM_PASSWORD_FILE=/etc/xs512em/pw
+#   #   XS512EM_MCP_TOKEN=<long-random-string>
+#   sudo cp deploy/xs512em-mcp.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now xs512em-mcp
+[Unit]
+Description=NETGEAR XS512EM MCP server (streamable-http)
+Documentation=https://github.com/supere989/netgear-xs512em
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xs512em
+Group=xs512em
+EnvironmentFile=/etc/xs512em/mcp.env
+ExecStart=/opt/xs512em/.venv/bin/xs512em-mcp
+Restart=on-failure
+RestartSec=3
+# hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+
+[Install]
+WantedBy=multi-user.target

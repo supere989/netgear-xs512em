@@ -1,0 +1,27 @@
+# Shared xs512em MCP service for the tool-hub (one endpoint for all clients).
+#
+# Setup on the host:
+#   1) put the switch admin password in   ./secrets/pw   (chmod 600)
+#   2) cp .env.example .env  and set       XS512EM_MCP_TOKEN  to a long random string
+#   3) docker compose up -d --build
+#
+# Clients then register the remote endpoint:
+#   claude mcp add --transport http xs512em http://<this-host>:8765/mcp \
+#       --header "Authorization: Bearer <XS512EM_MCP_TOKEN>"
+services:
+  xs512em-mcp:
+    build: .
+    image: xs512em-mcp:local
+    container_name: xs512em-mcp
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      MCP_TRANSPORT: streamable-http
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8765"
+      XS512EM_HOST: "10.150.1.239"
+      XS512EM_PASSWORD_FILE: /secrets/pw
+      XS512EM_MCP_TOKEN: "${XS512EM_MCP_TOKEN:?set XS512EM_MCP_TOKEN in .env}"
+    volumes:
+      - ./secrets/pw:/secrets/pw:ro
