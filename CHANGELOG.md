@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.2.0] — 2026-06-15
+
+### Added
+- **Remote MCP transports:** `streamable-http` (current MCP spec, `/mcp`) and legacy `sse` (`/sse`),
+  selectable via `--transport` / `MCP_TRANSPORT` (stdio stays the default). Bind with `--host/--port`
+  or `MCP_HOST/MCP_PORT`.
+- **Optional bearer auth** for the HTTP transports (`XS512EM_MCP_TOKEN`) plus an unauthenticated
+  `GET /healthz` liveness probe.
+- **Process-wide mutex** serialising every switch operation, so one shared remote endpoint is safe
+  for concurrent clients despite the switch's single-session limit.
+- Deployment artifacts: `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `.env.example`, and the
+  `deploy/xs512em-mcp.service` systemd unit.
+
+### Changed
+- `xs512em-mcp` now accepts CLI args / env for transport selection; the bare invocation is unchanged
+  (stdio), so existing `claude mcp add … -- xs512em-mcp` registrations keep working.
+
 ## [0.1.0] — 2026-06-08
 
 Initial public release.
