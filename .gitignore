@@ -26,3 +26,6 @@ htmlcov/
 *.key
 .env
 secrets/
+
+# Stray agent/workflow artifacts
+.claude/
